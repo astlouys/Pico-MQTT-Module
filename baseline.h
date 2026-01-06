@@ -6,6 +6,7 @@
 /* --------------------------------------------------------------------------------------------------------------------------- *\
                                                       General definitions.
 \* --------------------------------------------------------------------------------------------------------------------------- */
+/* Variable types. */
 typedef char          CHAR;
 typedef unsigned char UCHAR;
 typedef int           INT;    // processor-optimized.
@@ -18,13 +19,39 @@ typedef uint8_t       UINT8;
 typedef uint16_t      UINT16;
 typedef uint32_t      UINT32;
 typedef uint64_t      UINT64;
+typedef float         FLOAT;
+typedef double        DOUBLE;
 
+/* On / Off flags. */
 #define FLAG_OFF     0x00
 #define FLAG_ON      0x01
 
+/* False / true. */
 #define FALSE           0
 #define TRUE            1
 
-#define PICO_LED_PIN   25
-#endif  // _BASELINE_H_
+#define GPIO_PICO_LED  25
 
+/* Logged data extra information. */
+#define LOG_NONE        0
+#define LOG_LINE        1
+#define LOG_CORE        2
+#define LOG_TIME        4
+#define LOG_DATE        8
+#define LOG_FUNCTION   16
+#define LOG_ALL      0xFF
+
+#if 0
+/* Day names. A few more characters are allowed in provision for foreign languages. */
+UCHAR DayName[7][13] =
+{
+  {"Sunday"}, {"Monday"}, {"Tuesday"}, {"Wednesday"}, {"Thursday"}, {"Friday"}, {"Saturday"}
+};
+
+/* Short month names (3 letters). */
+UCHAR ShortMonth[13][4] =
+{
+  {" "}, {"JAN"}, {"FEB"}, {"MAR"}, {"APR"}, {"MAY"}, {"JUN"}, {"JUL"}, {"AUG"}, {"SEP"}, {"OCT"}, {"NOV"}, {"DEC"}
+};
+#endif  // 0
+#endif  // _BASELINE_H_

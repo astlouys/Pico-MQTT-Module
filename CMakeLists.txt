@@ -95,12 +95,29 @@ pico_sdk_init()
 # =====================================================================================================================
 #                                         Optionally add options to the compiler.
 # =====================================================================================================================
-# add_compile_options(
+add_compile_options(
 #         -Wall
-#         -Wno-format          # int != int32_t as far as the compiler is concerned because gcc has int32_t as long int
-#         -Wno-unused-function # we have some for the docs that aren't called
-#         -Wno-maybe-uninitialized
-#         )
+#         -Wdeclaration-after-statement
+        -Wno-format
+        -Wimplicit-function-declaration
+        -Wimplicit-int
+        -Wincompatible-pointer-types
+        -Winfinite-recursion
+        -Wint-conversion
+        -Wmaybe-uninitialized
+        -Wmisleading-indentation
+        -Wparentheses
+        -Wreturn-type
+        -Wshift-negative-value
+        -Wuninitialized
+        -Wunused
+        -Wunused-but-set-parameter
+        -Wunused-but-set-variable
+        -Wunused-function
+        -Wunused-label
+        -Wunused-parameter
+        -Wunused-variable
+)
 #
 #
 #
@@ -180,6 +197,7 @@ if (PICO_CYW43_SUPPORTED) # set by PICO_BOARD definition above
         pico_multicore
         hardware_i2c
         # hardware_pwm
+        hardware_rtc
         # hardware_spi
         hardware_uart
         pico_bootrom
