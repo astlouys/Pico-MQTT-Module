@@ -2,6 +2,6 @@
 
 # Pico-MQTT-Module
 
-Add-on C-Language module to merge with your existing (C-Language) program / project, giving it access to the MQTT protocol.
+Add-on C-Language module to integrate to your existing (C-Language) program / project, giving it access to the MQTT protocol.
 
-A detailed User Guide and an example program are provided to help you see how the Pico-MQTT-Module can be integrated in your own program.
+A detailed User Guide and an example program are provided to help you see how the Pico-MQTT-Module can be integrated to your own program.
