@@ -30,6 +30,11 @@ typedef double        DOUBLE;
 #define FALSE           0
 #define TRUE            1
 
+/* Microcontroler type. */
+#define TYPE_PICO       1
+#define TYPE_PICOW      2
+
+/* Original Pico internal LED GPIO. */
 #define GPIO_PICO_LED  25
 
 /* Logged data extra information. */

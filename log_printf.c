@@ -1,6 +1,6 @@
 /* $PAGE */
 /* $TITLE=log_printf() */
-/* Updated 19-DEC-2025 */
+/* Updated 25-FEB-2026 */
 /* ============================================================================================================================================================= *\
                                                                        Print a string to log file.
    NOTE: If the leftmost part of the string to log corresponds to "LOG MASK", the data to the right will be decoded as an UINT16 hex number defining
@@ -28,20 +28,20 @@
 void log_printf(UINT LineNumber, const UCHAR *FunctionName, UCHAR *Format, ...)
 {
 #ifdef RELEASE_VERSION
-  UINT8 FlagLocalDebug = FLAG_OFF;  // should be OFF at all times
+  UINT8 FlagLocalDebug = FLAG_OFF;  // must be turned OFF at all times.
 #else   // RELEASE_VERSION
-  UINT8 FlagLocalDebug = FLAG_OFF;  // may be turned On for debugging purposes.
+  UINT8 FlagLocalDebug = FLAG_OFF;  // may be turned ON for debug purposes.
 #endif  // RELEASE_VERSION
 
   UCHAR Dum1Str[512];
   UCHAR Dum2Str[512];
 
-  UINT FunctionSize = 20;  // specify space reserved to display function name including the two "[]".
+  UINT FunctionSize = 25;  // specify space reserved to display function name including the two "[]". A tilde <~> will be append if function name has been truncated.
   UINT Loop1UInt;
   UINT Loop2UInt;
   UINT LineSize;
 
-  static UINT16 LogMask = 0x11;  // bitmask of parameters to display along with text to log (Line number and Function name turned On by default):
+  static UINT16 LogMask = 0x13;  // bitmask of parameters to display along with text to log (Line number and Function name turned On by default):
                                  // 0x0001 = LOG_LINE     (Line number).
                                  // 0x0002 = LOG_CORE     (Core number).
                                  // 0x0004 = LOG_TIME     (Time - when real-time clock is available on target system).
@@ -49,7 +49,7 @@ void log_printf(UINT LineNumber, const UCHAR *FunctionName, UCHAR *Format, ...)
                                  // 0x0010 = LOG_FUNCTION (Function name of caller function).
                                  // 0xFFFF = LOG_ALL      (All available extra log information).
 
-  datetime_t DateTime;  // real-time clock variable.  ///// comment out this line if project does not allow date stamping.
+  datetime_t DateTime;  // real-time clock variable.  ///// comment out this line (and other lines related to time stamping) if project does not allow time stamping.
 
   va_list argp;
 

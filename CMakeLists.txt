@@ -196,6 +196,7 @@ if (PICO_CYW43_SUPPORTED) # set by PICO_BOARD definition above
         pico_lwip_mqtt
         pico_multicore
         hardware_i2c
+        hardware_adc
         # hardware_pwm
         hardware_rtc
         # hardware_spi
