@@ -2,6 +2,6 @@
 
 # Pico-MQTT-Module
 
-Add-on C-Language module to integrate to your existing (C-Language) program / project, giving it access to the MQTT protocol.
+Add-on C-Language module to integrate to your existing Raspberry Pi Pico (C-Language) program / project, giving it access to the MQTT protocol.
 
 A detailed User Guide and an example program are provided to help you see how the Pico-MQTT-Module can be integrated to your own program.
