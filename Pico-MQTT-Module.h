@@ -35,6 +35,7 @@
 #define PORT                      1883  // port used for MQTT.
 #define MAX_MQTT_BREAKDOWN_HISTORY  10  // number of breakdown history items to keep in memory.
 
+/* Result codes when am action is required after execution of a callback. */
 #define MQTT_CONNECTION_OK        1001  // connect with MQTT broker without error.
 #define MQTT_CONNECTION_ERROR     1002  // error while trying to connect with MQTT broker.
 #define MQTT_PUBLISH_OK           1003  // publish on a specific topic without error.
@@ -69,11 +70,7 @@ struct struct_mqtt
   UCHAR          *SubTopic[MAX_SUB_TOPICS];
   UCHAR          *SubPayload[MAX_SUB_PAYLOADS];
   UINT32         PayloadLength;
-  void           (*mqtt_status)(UINT16 Status);
-  /// void           (*mqtt_connection_status)(UINT8 Status);
-  /// void           (*mqtt_publish_status)(UINT8 Status);
-  /// void           (*mqtt_subscribe_status)(UINT8 Status);
-  /// void           (*mqtt_topic_receive)(UINT8 Argument);
+  void           (*mqtt_status)(UINT16 Status);  // in case original program requires to take an action when a callback executes
   mqtt_client_t *MqttClientInstance;
   struct mqtt_connect_client_info_t MqttClientInfo;
   datetime_t BreakdownStart[MAX_MQTT_BREAKDOWN_HISTORY];  // time stamp of the last MQTT connection breakdowns start time.

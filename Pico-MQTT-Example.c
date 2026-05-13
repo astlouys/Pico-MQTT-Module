@@ -3,7 +3,7 @@
    St-Louys Andre - August 2024
    astlouys@gmail.com
    https://github.com/astlouys/Pico-MQTT-Module
-   Revision 02-APR-2026
+   Revision 04-APR-2026
    Langage: C
    Version 3.00
 
@@ -148,6 +148,7 @@ Test point 6 - Bootsel (upload mode).
 \* ============================================================================================================================================================= */
 UCHAR  PicoUniqueId[40];    // Pico Unique ID ("serial number") used to retrieve device ID.
 UCHAR  PicoIdentifier[40];  // "human string" to describe / identify the PicoW client device from its Unique Number (also used for MQTT ID).
+UCHAR Separator[] = "========================================================================================================================\n";
 
 UINT8 FlagTimeSet = FLAG_OFF;
 
@@ -235,7 +236,7 @@ UINT main()
   /* ----------------------------------------------------------------------------------------------------------------------------------------------------------- *\
                                                                           Initializations.
   \* ----------------------------------------------------------------------------------------------------------------------------------------------------------- */
-   stdio_init_all();
+  stdio_init_all();
 
 
   /* ----------------------------------------------------------------------------------------------------------------------------------------------------------- *\
@@ -351,7 +352,7 @@ UINT main()
   while (1)
   {
     CurrentTimer = time_us_64();
-    watchdog_update();  // kick watchdog to keep the Firmware alive.
+    watchdog_update();  // kick watchdog to keep Firmware alive.
     rtc_get_datetime(&DateTime);
     // log_printf(__LINE__, __func__, "Date: %s %2.2u-%3s-%4.4u   %2.2u:%2.2u:%2.2u\n", DayName[DateTime.dotw], DateTime.day, ShortMonth[DateTime.month], DateTime.year, DateTime.hour, DateTime.min, DateTime.sec);
 
@@ -463,7 +464,7 @@ void log_header(void)
 {
   INT16 ReturnCode;
 
-  log_printf(__LINE__, __func__, "========================================================================================================================\n");
+  log_printf(__LINE__, __func__, Separator);
   log_printf(__LINE__, __func__, "<120>Pico-MQTT-Example - Firmware version %s\n", FIRMWARE_VERSION);
   log_printf(__LINE__, __func__, "<120>Compatible with ASTL Smart Home ecosystem.\n");
   log_printf(__LINE__, __func__, "<120>Pico unique ID:  <%s>.\n", PicoUniqueId);
@@ -503,7 +504,7 @@ void log_header(void)
   }
 
   log_printf(__LINE__, __func__, "<120>Current timer value: %llu\n", time_us_64());
-  log_printf(__LINE__, __func__, "========================================================================================================================\n");
+  log_printf(__LINE__, __func__, Separator);
 
   return;
 }
@@ -689,6 +690,9 @@ static void mqtt_initialization(void)
   UINT8 FlagLocalDebug = FLAG_OFF;  // may be turned ON for debug purposes.
 #endif  // RELEASE_VERSION
 
+  UCHAR WillMessage[80];
+  UCHAR WillTopic[64];
+
   INT16 ReturnCode;
 
 
@@ -703,6 +707,9 @@ static void mqtt_initialization(void)
   }
 
 
+  sprintf(WillTopic,   "Control/%s", PicoIdentifier);
+  sprintf(WillMessage, "%s will message - MQTT connection terminated", PicoIdentifier);
+
   strcpy(StructMQTT.Password,  MQTT_PASSWORD);              // MQTT password should have been read from an environment variable (see User Guide).
   ip4addr_aton(MQTT_BROKER_IP, &StructMQTT.BrokerAddress);  // MQTT broker address should have been read from an environment variable (see User Guide).
   StructMQTT.PicoIPAddress = StructWiFi.PicoIPAddress;
@@ -716,10 +723,10 @@ static void mqtt_initialization(void)
        const char* client_user;  // user name, set to NULL if not used.
        const char* client_pass;  // password, set to NULL if not used.
        u16_t keep_alive;         // keep alive time in seconds, 0 to disable keep alive functionality.
-       const char* will_topic;   // will topic, set to NULL if will is not to be used, will_msg, will_qos and will retain are then ignored.
-       const char* will_msg;     // will_msg, see will_topic.
-       u8_t will_qos;            // will_qos, see will_topic.
-       u8_t will_retain;         // will_retain, see will_topic.
+       const char* will_topic;   // Will topic, set to NULL if Will is not to be used, will_msg, will_qos and will retain are then ignored.
+       const char* will_msg;     // Will_msg, see will_topic.
+       u8_t will_qos;            // Will_qos, see will_topic.
+       u8_t will_retain;         // Will_retain, see will_topic.
        #if LWIP_ALTCP && LWIP_ALTCP_TLS
          struct altcp_tls_config *tls_config;  // TLS configuration for secure connections.
      }
@@ -735,9 +742,8 @@ static void mqtt_initialization(void)
   StructMQTT.MqttClientInfo.client_user = "pi";
   StructMQTT.MqttClientInfo.client_pass = MQTT_PASSWORD;
   StructMQTT.MqttClientInfo.keep_alive  = 60;  // Keep alive frequency in seconds.
-  StructMQTT.MqttClientInfo.will_topic  = "Pico-MQTT-Example";
-  StructMQTT.MqttClientInfo.will_msg    = "Pico-MQTT-Example - Connection terminated";
-  // StructMQTT.MqttClientInfo.will_msg    = NULL;
+  StructMQTT.MqttClientInfo.will_topic  = WillTopic;
+  StructMQTT.MqttClientInfo.will_msg    = WillMessage;
   StructMQTT.MqttClientInfo.will_qos    = 2;  // request to receive message exactly once for Will message on Pico-ASTL-Control.
   StructMQTT.MqttClientInfo.will_retain = 0;
 
@@ -846,9 +852,9 @@ void term_menu()
       case (1):
         /* Display Wi-Fi information. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Display Wi-Fi information.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         wifi_display_info();
         printf("\n\n");
       break;
@@ -856,9 +862,9 @@ void term_menu()
       case (2):
         /* Display MQTT client information. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Display current MQTT client information.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         mqtt_display_client();
         printf("\n\n");
       break;
@@ -866,9 +872,9 @@ void term_menu()
       case (3):
         /* Set MQTT broker IP address. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Setting MQTT broker IP address.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "Current MQTT broker IP address: %s\n", ip4addr_ntoa(&StructMQTT.BrokerAddress));
         log_printf(__LINE__, __func__, "Enter new IP address for MQTT broker or <Enter> to keep current IP address: ");
         input_string(String, sizeof(String), 0ll);
@@ -895,12 +901,12 @@ void term_menu()
       case (4):
         /* MQTT Connect. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Sending <Connect> command to MQTT broker.\n");
         log_printf(__LINE__, __func__, "NOTES:\n");
         log_printf(__LINE__, __func__, "1) If MQTT client is already connected, connection will be lost if trying to connect once again.\n");
         log_printf(__LINE__, __func__, "2) MQTT client instance must have been allocated and initialized for connection with MQTT broker to succeed.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "Press <G> to proceed: ");
         input_string(String, 1, 0ll);
         if ((String[0] == 'G') || (String[0] == 'g'))
@@ -924,9 +930,9 @@ void term_menu()
       case (5):
         /* Disconnect client from MQTT broker. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Disconnect client from MQTT broker.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "Press <G> to proceed: ");
         input_string(String, 1, 0ll);
         if ((String[0] == 'G') || (String[0] == 'g'))
@@ -944,9 +950,9 @@ void term_menu()
       case (6):
         /* Subscribe to a MQTT topic. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Subscribe to a MQTT topic.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "Enter topic to subscribe to: ");
         input_string(Topic, sizeof(Topic), 0);
         if (isalnum(Topic[0]) == 0)
@@ -988,9 +994,9 @@ void term_menu()
       case (7):
         /* Publish on a specific MQTT topic. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Publish on a specific MQTT topic.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "Enter Topic to publish on: ");
         input_string(Topic, sizeof(Topic), 0);
         if (isalnum(Topic[0]) == 0)
@@ -1035,9 +1041,9 @@ void term_menu()
       case (8):
         /* Unsubscribe from a MQTT topic. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Unsubscribe from a MQTT topic.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "Enter topic to unsubscribe from: ");
         input_string(Topic, sizeof(Topic), 0ll);
         if (isalnum(Topic[0]) == 0)
@@ -1075,9 +1081,9 @@ void term_menu()
       case (9):
         /* Set MQTT client parameters. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Set MQTT client parameters.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "To be completed\n");
         printf("\n\n");
       break;
@@ -1085,9 +1091,9 @@ void term_menu()
       case (10):
         /* Find memory pattern for a given number. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Find the memory pattern for a given number.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "Enter the number to modelize: ");
         input_string(String, sizeof(String), 0ll);
         Dum1UInt16 = atoi(String);
@@ -1119,9 +1125,9 @@ void term_menu()
       case (88):
         /* Restart the Firmware. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Restart the Firmware.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "Press <G> to proceed: ");
         input_string(String, 1, 0ll);
         if ((String[0] == 'G') || (String[0] == 'g'))
@@ -1141,9 +1147,9 @@ void term_menu()
       case (99):
         /* Switch the Pico in upload mode. */
         printf("\n\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "<120>Switch Pico in upload mode.\n");
-        log_printf(__LINE__, __func__, "========================================================================================================================\n");
+        log_printf(__LINE__, __func__, Separator);
         log_printf(__LINE__, __func__, "Press <G> to proceed: ");
         input_string(String, 1, 0ll);
         if ((String[0] == 'G') || (String[0] == 'g'))

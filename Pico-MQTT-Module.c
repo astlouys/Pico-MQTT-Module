@@ -3,7 +3,7 @@
    St-Louys Andre - May 2025
    astlouys@gmail.com
    https://github.com/astlouys/Pico-MQTT-Module
-   Revision 02-APR-2026
+   Revision 02-MAY-2026
    Langage: C
    Version 3.00
 
@@ -158,7 +158,7 @@ NOTE: QoS (Quality of Service) for MQTT message delivery goes as follow:
 /* ============================================================================================================================================================= *\
                                                                      Definitions and macros.
 \* ============================================================================================================================================================= */
-#define RELEASE_VERSION
+#define RELEASE_VERSION  ///
 // #define FRENCH   // not used for now.
 // #define ENGLISH  // not used for now.
 
@@ -335,6 +335,10 @@ void mqtt_breakdown_start(void)
 /* $TITLE=mqtt_check_connection() */
 /* ============================================================================================================================================================= *\
                                                                    Check MQTT connection health.
+                              Return codes:
+                 -1 - MQTT client instance is not valid.
+                  0 - MQTT client instance is valid and is connected to MQTT broker.
+                  1 - MQTT client instance is valid but it is disconnected from MQTT broker.
 \* ============================================================================================================================================================= */
 INT16 mqtt_check_connection(UINT8 FlagWiFiHealth)
 {
@@ -343,6 +347,8 @@ INT16 mqtt_check_connection(UINT8 FlagWiFiHealth)
 #else   // RELEASE_VERSION
   UINT8 FlagLocalDebug = FLAG_OFF;  // may be turned ON for debug purposes.
 #endif  // RELEASE_VERSION
+
+  INT8 ReturnCode;
 
   static UINT16 RetryCycles = 4;
 
@@ -357,73 +363,81 @@ INT16 mqtt_check_connection(UINT8 FlagWiFiHealth)
   }
 
 
-  if (StructMQTT.MqttClientInstance)
+  if ((StructMQTT.MqttClientInstance) && (mqtt_client_is_connected(StructMQTT.MqttClientInstance)))
   {
-    if (mqtt_client_is_connected(StructMQTT.MqttClientInstance))
-    {
-      /* MQTT connection is OK. */
-      if (FlagLocalDebug) log_printf(__LINE__, __func__, "MQTT client is connected to MQTT broker: %d\n", mqtt_client_is_connected(StructMQTT.MqttClientInstance));
-      return 0;
-    }
-    else
-    {
-      log_printf(__LINE__, __func__, "MQTT client is NOT connected to MQTT broker: %d (cycle number %u)\n", mqtt_client_is_connected(StructMQTT.MqttClientInstance), RetryCycles);
-    }
+    /* MQTT client instance is still valid and connection with MQTT broker is OK. */
+    if (FlagLocalDebug) log_printf(__LINE__, __func__, "MQTT client is connected to MQTT broker (0x%p)\n", StructMQTT.MqttClientInstance);
+    MQTTCycles15Sec = 0l;
+    return 0;
   }
 
 
-  if ((!StructMQTT.MqttClientInstance) || (!mqtt_client_is_connected(StructMQTT.MqttClientInstance)))
+  /* Check if this is the beginning of a new breakdown period. */
+  if (StructMQTT.FlagHealth == FLAG_ON)
+  {
+    /* Connection with broker was still good during previous cycle... */
+    if (FlagLocalDebug) log_printf(__LINE__, __func__, "MQTT connection was good during previous cycle, time stamp MQTT breakdown start.\n");
+    StructMQTT.FlagHealth = FLAG_OFF;
+
+    /* Since MQTT connection was still good during previous cycle, this is the beginning of a new MQTT breakdown period. */
+    ++StructMQTT.TotalErrors;
+
+    /* Keep track of time at beginning of breakdown. */
+    mqtt_breakdown_start();
+  }
+
+
+  /* If MQTT client instance is not valid, try to allocate it. */
+  if (!StructMQTT.MqttClientInstance)
   {
     if (StructMQTT.FlagStartupOver == FLAG_OFF)
-      log_printf(__LINE__, __func__, "MQTT client is not connected to MQTT broker yet.\n");
+      log_printf(__LINE__, __func__, "MQTT client instance has not been allocated yet.\n");
     else
-      log_printf(__LINE__, __func__, "MQTT client has been disconnected from MQTT broker.\n");
+      log_printf(__LINE__, __func__, "MQTT client instance is not valid any more.\n");
 
-    /* MQTT client is disconnected from broker. */
-    if (StructMQTT.FlagHealth == FLAG_ON)
+    ReturnCode = mqtt_init();
+    switch (ReturnCode)
     {
-      /* Connection with broker was still good during previous cycle... make sure current MQTT parameters are cleaned. */
-      if (FlagLocalDebug) log_printf(__LINE__, __func__, "MQTT connection was good during previous cycle, time stamp MQTT breakdown start.\n");
-      StructMQTT.FlagHealth = FLAG_OFF;
+      case (-1):
+        log_printf(__LINE__, __func__, "MQTT Client instance could not be created.\n");
+        StructMQTT.FlagHealth = FLAG_OFF;
+      break;
 
-      /* Since MQTT connection was still good during previous cycle, this is the beginning of a new MQTT breakdown period. */
-      ++StructMQTT.TotalErrors;
+      case (0):
+        /* Should never happen since MQTT client instance was invalidate before calling mqtt_init(). */
+        log_printf(__LINE__, __func__, "MQTT client instance was still valid (0x%p).\n", StructMQTT.MqttClientInstance);
+      break;
 
-      /* Keep track of time at beginning of breakdown. */
-      mqtt_breakdown_start();
+      case (1):
+        log_printf(__LINE__, __func__, "MQTT client instance created successfully (0x%p).\n", StructMQTT.MqttClientInstance);
+      break;
     }
+  }
+  else
+  {
+    ReturnCode = 1;  // MQTT client instance is OK but it is dosconnected.
+  }
 
 
-    if (FlagWiFiHealth == FLAG_ON)
+  if (FlagWiFiHealth == FLAG_ON)
+  {
+    /* Wi-Fi connection is OK, problem is only with MQTT connection. */
+    ++MQTTCycles15Sec;  // one more 15-seconds cycle with a bad MQTT connection, will rollover to 0 when reaching end of UINT32 range if ever the case.
+    if (FlagLocalDebug) log_printf(__LINE__, __func__, "Wi-Fi health is OK, increment MQTT cycles before next retry (%lu).\n", MQTTCycles15Sec);
+
+    /* Try to reconnect with MQTT broker every once in a while. */
+    if ((!(MQTTCycles15Sec % RetryCycles)) || (StructMQTT.FlagStartupOver == FLAG_OFF))
     {
-      /* Wi-Fi connection is OK, problem is only with MQTT connection. */
-      ++MQTTCycles15Sec;  // one more 15-seconds cycle with a bad MQTT connection, will rollover to 0 when reaching end of UINT32 range if ever the case.
-      if (FlagLocalDebug) log_printf(__LINE__, __func__, "Wi-Fi health is OK, increment MQTT cycles before next retry (%lu).\n", MQTTCycles15Sec);
-
-      /* Try to reconnect with MQTT broker every once in a while. */
-      if ((!(MQTTCycles15Sec % RetryCycles)) || (StructMQTT.FlagStartupOver == FLAG_OFF))
+      if (FlagLocalDebug) log_printf(__LINE__, __func__, "FlagStartupOver -> %u or MQTTCycles15Sec divisible by %u -> %u     Trying to connect to MQTT broker.\n", StructMQTT.FlagStartupOver, RetryCycles, MQTTCycles15Sec);
+      /* Validate MQTT broker IP address. */
+      if (!ip4addr_aton(MQTT_BROKER_IP, &StructMQTT.BrokerAddress))
       {
-        if (FlagLocalDebug) log_printf(__LINE__, __func__, "FlagStartupOver -> %u or MQTTCycles15Sec divisible by 4 -> %u     Trying to connect to MQTT broker.\n", StructMQTT.FlagStartupOver, MQTTCycles15Sec);
-        /* Validate MQTT broker IP address. */
-        if (!ip4addr_aton(MQTT_BROKER_IP, &StructMQTT.BrokerAddress))
-        {
-          log_printf(__LINE__, __func__, "Invalid MQTT broker IP address.\n");
-        }
-        else
-        {
-          if (FlagLocalDebug) log_printf(__LINE__, __func__, "MQTT broker IP address seems valid: %s, proceed with mqtt_init()\n", ip4addr_ntoa(&StructMQTT.BrokerAddress));
-          if (mqtt_init() == 0)
-          {
-            log_printf(__LINE__, __func__, "MQTT client instance created (0x%p).\n", StructMQTT.MqttClientInstance);
-            MQTTCycles15Sec = 0l;
-            return 1;  // indicate that MQTT Client instance has been created.
-          }
-          else
-          {
-            StructMQTT.FlagHealth = FLAG_OFF;
-            log_printf(__LINE__, __func__, "MQTT Client instance could not be created.\n");
-          }
-        }
+        log_printf(__LINE__, __func__, "Invalid MQTT broker IP address.\n");
+      }
+      else
+      {
+        if (FlagLocalDebug) log_printf(__LINE__, __func__, "MQTT broker IP address seems valid: %s\n", ip4addr_ntoa(&StructMQTT.BrokerAddress));
+        return ReturnCode;  // indicate that MQTT Client instance has been created.
       }
     }
   }
@@ -555,7 +569,6 @@ void mqtt_display_client(void)
       log_printf(__LINE__, __func__, "MqttClientInfo.will_retain:    <%u>\n", StructMQTT.MqttClientInfo.will_retain);
 
 #if 0  // Below for reference purposes.
-  
     u16_t cyclic_tick;
     u16_t keep_alive;
     u16_t server_watchdog;
@@ -589,11 +602,11 @@ void mqtt_display_client(void)
     }
   }
 
-  log_printf(__LINE__, __func__, "Total unique MQTT error count: %lu\n", StructMQTT.TotalErrors);
-  log_printf(__LINE__, __func__, "MQTT broker IP address:        <%s>\n", ip4addr_ntoa(&StructMQTT.BrokerAddress));
-  log_printf(__LINE__, __func__, "Pico IP address:               <%s>\n", ip4addr_ntoa(&StructMQTT.PicoIPAddress));
-  log_printf(__LINE__, __func__, "Pico Unique ID:                <%s>\n", StructMQTT.PicoUniqueId);
-  log_printf(__LINE__, __func__, "Device Identifier:             <%s>\n", StructMQTT.PicoIdentifier);
+  log_printf(__LINE__, __func__, "Total unique MQTT error count: <%lu>\n", StructMQTT.TotalErrors);
+  log_printf(__LINE__, __func__, "MQTT broker IP address:        <%s>\n",  ip4addr_ntoa(&StructMQTT.BrokerAddress));
+  log_printf(__LINE__, __func__, "Pico IP address:               <%s>\n",  ip4addr_ntoa(&StructMQTT.PicoIPAddress));
+  log_printf(__LINE__, __func__, "Pico Unique ID:                <%s>\n",  StructMQTT.PicoUniqueId);
+  log_printf(__LINE__, __func__, "Device Identifier:             <%s>\n",  StructMQTT.PicoIdentifier);
   log_printf(__LINE__, __func__, "========================================================================================================================\n");
   log_printf(__LINE__, __func__, "<120>Last Topic details:\n");
   mqtt_display_topic();
@@ -867,7 +880,7 @@ void mqtt_incoming_publish_cb(void *ExtraArgument, const char *Topic, UINT32 Pay
 /* $PAGE */
 /* $TITLE=mqtt_init() */
 /* ============================================================================================================================================================= *\
-                                                                     Initialize MQTT session.
+                                                              Allocate MQTT client instance if required.
 \* ============================================================================================================================================================= */
 INT16 mqtt_init(void)
 {
@@ -887,6 +900,7 @@ INT16 mqtt_init(void)
     else
     {
       log_printf(__LINE__, __func__, "Successful creation of a new MQTT client instance (0x%p).\n", StructMQTT.MqttClientInstance);
+      return 1;
     }
   }
   else
