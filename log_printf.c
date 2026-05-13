@@ -49,7 +49,7 @@ void log_printf(UINT LineNumber, const UCHAR *FunctionName, UCHAR *Format, ...)
                                  // 0x0010 = LOG_FUNCTION (Function name of caller function).
                                  // 0xFFFF = LOG_ALL      (All available extra log information).
 
-  datetime_t DateTime;  // real-time clock variable.  ///// comment out this line (and other lines related to time stamping) if project does not allow time stamping.
+  datetime_t LogTime;  // real-time clock variable.  ///// comment out this line (and other lines related to time stamping) if project does not allow time stamping.
 
   va_list argp;
 
@@ -149,19 +149,25 @@ void log_printf(UINT LineNumber, const UCHAR *FunctionName, UCHAR *Format, ...)
 // #if 0  // Uncomment this line if your project does not allow date stamping (to prevent error messages for undefined date and time related functions / variables).
   if (LogMask & (LOG_TIME + LOG_DATE))
   {
-    rtc_get_datetime(&DateTime);  // retrieve current time from Pico's RTC.
+    rtc_get_datetime(&LogTime);  // retrieve current time from Pico's RTC.
+    /***
+    printf("[%5u %u] LogTime retrieve in log_info() - Day: %u   Month: %u   Year: %u     Hour: %u   Minute: %u   Second: %u\n", 
+           __LINE__, get_core_num(),
+           LogTime.day,  LogTime.month, LogTime.year,
+           LogTime.hour, LogTime.min,   LogTime.sec);
+    ***/
     printf("[");
 
     if (LogMask & LOG_DATE)
     {
       /* Display date. */
-      printf("%2.2d-%s-%2.2d", DateTime.day, ShortMonth[DateTime.month], DateTime.year);
+      printf("%2.2d-%s-%2.2d", LogTime.day, ShortMonth[LogTime.month], LogTime.year);
       if (LogMask & LOG_TIME) printf("  ");  // separator.
     }
     if (LogMask & LOG_TIME)
     {
       /* Display time. */
-      printf("%2.2d:%2.2d:%2.2d", DateTime.hour, DateTime.min, DateTime.sec);
+      printf("%2.2d:%2.2d:%2.2d", LogTime.hour, LogTime.min, LogTime.sec);
     }
     printf("] ");
   }

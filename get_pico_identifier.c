@@ -1,12 +1,15 @@
 #include "hardware/adc.h"
-#define ADC_VCC                 29            // internal GPIO to determine if we are running on a Pico or PicoW.
+
+#define ADC_VCC  29  // internal GPIO to determine if we are running on a Pico or PicoW.
+
 /* $PAGE */
 /* $TITLE=get_pico_identifier() */
 /* ============================================================================================================================================================= *\
                                                  Retrieve specific Pico identifier string from its Unique ID.
          This function attributes a "device name" (or "device ID") to each physical Pico, based on its "Unique ID" (serial number in Pico's flash memory).
-    This way, we can use this "Device Name" as an MQTT client ID. If no Device Id is found corresponding to the Pico's Unique ID, the Unique ID itself
-    will be returned as the Device Name. If this happens, you should edit the <get_pico_identifier()> function and add the Pico's Unique ID and A "UFO-Pico" means an "Unidentified Flying picO", or a Pico for which no name has been assigned yet.
+        This way, we can use this "Device Name" as an MQTT client ID. If no Device Id is found corresponding to the Pico's Unique ID, the Unique ID itself
+        will be returned as the Device Name. If this happens, you should edit the <get_pico_identifier()> function and add the Pico's Unique ID along with
+                                                           its corresponding Device Name ("device ID").
 \* ============================================================================================================================================================= */
 void get_pico_identifier(UCHAR *PicoUniqueId, UCHAR *PicoIdentifier, UINT8 *PicoType)
 {
@@ -21,10 +24,11 @@ void get_pico_identifier(UCHAR *PicoUniqueId, UCHAR *PicoIdentifier, UINT8 *Pico
 
   /* ----------------------------------------------------------------------------------------------------------------------------------------------------------- *\
                                                                  Determine Pico type used (Pico or PicoW)
+                                                  NOTE: I didn't work on the identification of the Pico2 and Pico2W so far...
   \* ----------------------------------------------------------------------------------------------------------------------------------------------------------- */
-  /* Initialize analog-to-digital converter to read ambient light relative value and power supply info. */
+  /* Initialize analog-to-digital converter to read power supply info. */
   adc_init();
-  adc_gpio_init(ADC_VCC);           // power supply voltage.
+  adc_gpio_init(ADC_VCC);  // power supply voltage.
 
   /* Select power supply input. */
   adc_select_input(3);
@@ -36,17 +40,52 @@ void get_pico_identifier(UCHAR *PicoUniqueId, UCHAR *PicoIdentifier, UINT8 *Pico
   AdcValue = adc_read();
 
   /* Convert raw value to voltage value. */
+  /* Since the Pico's ADC has a 12 bits precision, the value read will be between  0 and 2 ^ 12, that is 4096 */
   Volts = AdcValue * (3.3 / (1 << 12));
 
-  log_printf(__LINE__, __func__, "AdcValue: %4u   Volts: %4.2f\n", AdcValue, Volts);
-  /* Reading example for a Pico  =         1995            1.61             2010            1.62   */
-  /* Reading example for a PicoW =         2395            1.93              120            0.10   */
-
-  /* Determine the microcontroller type based on Volts2 value. */
+  /* Determine the microcontroller type based on re`ad Volts value. */
   if (Volts > 1.0)
     *PicoType = TYPE_PICO;
   else
     *PicoType = TYPE_PICOW;
+
+
+#if 0
+  log_printf(__LINE__, __func__, "\n\n");
+  log_printf(__LINE__, __func__, "----------------------------------------------------------------------------------------------\n");
+  log_printf(__LINE__, __func__, "Pico's analog-to-digital precision (12 bits) = 0 to (1 << 12) which is 0 to %u\n", 1 << 12);
+  log_printf(__LINE__, __func__, "ADC VCC raw value read: %4u     Raw value converted to volts between 0 and 3.3 Volts: %4.2f\n", AdcValue, Volts);
+  log_printf(__LINE__, __func__, "PicoType: %u   Pico: %u   PicoW: %u\n", PicoType, TYPE_PICO, TYPE_PICOW);
+  switch (*PicoType)
+  {
+    case (TYPE_PICO):
+      log_printf(__LINE__, __func__, "Microcontroller is a Pico\n");
+    break;
+
+    case (TYPE_PICOW):
+      log_printf(__LINE__, __func__, "Microcontroller is a PicoW\n");
+    break;
+  }
+  log_printf(__LINE__, __func__, "----------------------------------------------------------------------------------------------\n\n\n");
+  /* ---------------------------------------------------------------------------- *\
+     Examples of typical values read for a Pico:
+     ADC raw value: 1995   Voltage value between 0 and 3.3: 1.61
+     ADC raw value: 2085   Voltage value between 0 and 3.3: 1.68
+     ADC raw value: 2090   Voltage value between 0 and 3.3: 1.68
+     ADC raw value: 2126   Voltage value between 0 and 3.3: 1.71
+     ADC raw value: 2128   Voltage value between 0 and 3.3: 1.71
+     ADC raw value: 2131   Voltage value between 0 and 3.3: 1.72
+     ADC raw value: 2178   Voltage value between 0 and 3.3: 1.75
+  \* ---------------------------------------------------------------------------- */
+  /* ---------------------------------------------------------------------------- *\
+     Examples of typical values read for a PicoW:
+     ADC raw value: 30     Voltage value between 0 and 3.3: 0.02
+     ADC raw value: 32     Voltage value between 0 and 3.3: 0.03
+     ADC raw value: 33     Voltage value between 0 and 3.3: 0.03
+     ADC raw value: 38     Voltage value between 0 and 3.3: 0.03
+     ADC raw value: 42     Voltage value between 0 and 3.3: 0.03
+   \* ---------------------------------------------------------------------------- */
+#endif  // 0
 
 
   

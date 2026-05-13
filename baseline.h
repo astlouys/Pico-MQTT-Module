@@ -46,6 +46,22 @@ typedef double        DOUBLE;
 #define LOG_FUNCTION   16
 #define LOG_ALL      0xFF
 
+
+/* Structure to contain time variables under "human" readable format instead of "tm" standard. */
+struct human_time
+{
+  UINT8 FlagDst;
+  UINT8 Hour;
+  UINT8 Minute;
+  UINT8 Second;
+  UINT8 DayOfWeek;
+  UINT8 DayOfMonth;
+  UINT8 Month;
+  UINT16 Year;
+  UINT16 DayOfYear;
+};
+
+
 #if 0
 /* Day names. A few more characters are allowed in provision for foreign languages. */
 UCHAR DayName[7][13] =

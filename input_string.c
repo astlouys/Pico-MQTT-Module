@@ -13,7 +13,6 @@ void input_string(UCHAR *String, UINT16 StringSize, UINT32 TimeOutMSec)
 
   UINT8 FlagLocalDebug = FLAG_OFF;
   UINT8 Loop1UInt8;
-  // UINT8 Loop2UInt8;
   UINT8 TargetHistory;
 
   UINT64 IdleTimer;
@@ -246,6 +245,8 @@ void input_string(UCHAR *String, UINT16 StringSize, UINT32 TimeOutMSec)
 
   
 #if 0
+  UINT8 Loop2UInt8;
+
   /* Optionally display keystroke history for debugging purposes. */
   printf("\n\n\n");
   for (Loop1UInt8 = 0; Loop1UInt8 < MAX_HISTORY; ++Loop1UInt8)
